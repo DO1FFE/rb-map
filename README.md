@@ -36,5 +36,5 @@ API request fails, the script prints an error message:
 python efa_stop_visits.py
 ```
 
-You can change the `stop_id` in the script to query another stop.
+You can change the stop name in the script to query another stop.
 
