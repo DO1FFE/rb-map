@@ -3,10 +3,26 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap-Mitwirkende'
 }).addTo(map);
 
+function loadLines() {
+  fetch('/api/lines')
+    .then(res => res.json())
+    .then(lines => {
+      const select = document.getElementById('line-filter');
+      lines.forEach(line => {
+        const opt = document.createElement('option');
+        opt.value = line;
+        opt.textContent = line;
+        select.appendChild(opt);
+      });
+    });
+}
+
 let markers = {};
 
 function updateVehicles() {
-  fetch('/api/vehicles')
+  const line = document.getElementById('line-filter').value;
+  const url = line ? `/api/vehicles?line=${encodeURIComponent(line)}` : '/api/vehicles';
+  fetch(url)
     .then(res => res.json())
     .then(data => {
       for (const id in markers) {
@@ -23,5 +39,6 @@ function updateVehicles() {
     });
 }
 
+loadLines();
 updateVehicles();
 setInterval(updateVehicles, 15000);
