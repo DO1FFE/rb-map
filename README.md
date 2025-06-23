@@ -29,7 +29,8 @@ Use the dropdown to filter vehicles by line. The map refreshes automatically eve
 
 The repository also contains a small helper script `efa_stop_visits.py` that
 fetches live departures for a single stop via the public EFA VRR API. Run it
-with Python to print the currently monitored lines, courses and stops:
+with Python to print the currently monitored lines, courses and stops. If the
+API request fails, the script prints an error message:
 
 ```bash
 python efa_stop_visits.py

@@ -1,8 +1,11 @@
 import requests
 
 
-def fetch_stop_visits(stop_id: str) -> dict:
-    """Return JSON data for upcoming visits at a stop from the EFA VRR API."""
+def fetch_stop_visits(stop_id: str) -> dict | None:
+    """Return JSON data for upcoming visits at a stop from the EFA VRR API.
+
+    Returns ``None`` if the request fails for any reason.
+    """
     url = "https://efa.vrr.de/standard/XML_STOPVISIT_REQUEST"
     params = {
         "language": "de",
@@ -11,13 +14,20 @@ def fetch_stop_visits(stop_id: str) -> dict:
         "siteid": "VRR",
         "stop": stop_id,
     }
-    response = requests.get(url, params=params, timeout=10)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as exc:
+        print(f"Failed to fetch stop visits: {exc}")
+        return None
 
 
-def show_active_vehicles(data: dict) -> None:
+def show_active_vehicles(data: dict | None) -> None:
     """Print information about all active vehicles in the response."""
+    if data is None:
+        print("No data available")
+        return
     visits = data.get("stopVisits", [])
     for visit in visits:
         journey = visit.get("monitoredVehicleJourney", {})
