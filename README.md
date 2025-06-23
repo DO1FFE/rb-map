@@ -38,3 +38,15 @@ python efa_stop_visits.py
 
 You can change the stop name in the script to query another stop.
 
+## Tram Course Monitor
+
+The script `efa_tram_monitor.py` queries the EFA `XML_DM_REQUEST` interface to
+list all active tram lines for a given stop and prints the currently served
+stop for each course as JSON. Internet access is required for the requests.
+
+Run it with:
+
+```bash
+python efa_tram_monitor.py
+```
+
