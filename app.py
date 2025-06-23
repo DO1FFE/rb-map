@@ -3,6 +3,21 @@ import requests
 
 app = Flask(__name__)
 
+
+def fetch_ruhrbahn_data() -> dict | None:
+    """Fetch data from the Ruhrbahn API and return the parsed JSON.
+
+    Returns None if the request fails for any reason.
+    """
+    url = "https://www.ruhrbahn.de/efaws2/default/XML_VEHICLE_MONITOR_REQUEST"
+    try:
+        response = requests.get(url, params={"outputFormat": "JSON"}, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as exc:
+        app.logger.exception("Ruhrbahn API request failed: %s", exc)
+        return None
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -11,10 +26,12 @@ def index():
 def get_vehicles():
     """Return vehicle positions optionally filtered by line."""
     line_filter = request.args.get("line")
-    url = "https://www.ruhrbahn.de/efaws2/default/XML_VEHICLE_MONITOR_REQUEST"
-    response = requests.get(url, params={"outputFormat": "JSON"})
-    response.raise_for_status()
-    data = response.json()
+    data = fetch_ruhrbahn_data()
+    if data is None:
+        return (
+            jsonify({"error": "Failed to fetch data from Ruhrbahn API"}),
+            502,
+        )
 
     vehicles = []
     for v in data.get("vehicles", []):
@@ -34,10 +51,12 @@ def get_vehicles():
 @app.route('/api/lines')
 def get_lines():
     """Return a list of available line numbers."""
-    url = "https://www.ruhrbahn.de/efaws2/default/XML_VEHICLE_MONITOR_REQUEST"
-    response = requests.get(url, params={"outputFormat": "JSON"})
-    response.raise_for_status()
-    data = response.json()
+    data = fetch_ruhrbahn_data()
+    if data is None:
+        return (
+            jsonify({"error": "Failed to fetch data from Ruhrbahn API"}),
+            502,
+        )
     lines = sorted({v["number"] for v in data.get("vehicles", []) if v.get("number")})
     return jsonify(lines)
 
