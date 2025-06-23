@@ -1,8 +1,31 @@
 import datetime
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 import requests
+
+
+def fetch_city_stops(city_name: str) -> List[str]:
+    """Return a list of stop IDs for the given city name."""
+    url = "https://efa.vrr.de/standard/XML_STOPFINDER_REQUEST"
+    params = {
+        "language": "de",
+        "outputFormat": "JSON",
+        "type_sf": "stop",
+        "name_sf": city_name,
+    }
+    resp = requests.get(url, params=params, timeout=10)
+    resp.raise_for_status()
+    data = resp.json()
+
+    stops = []
+    for p in data.get("stopFinder", {}).get("points", []):
+        ref = p.get("ref", {})
+        if ref.get("place") == city_name:
+            stop_id = ref.get("id")
+            if stop_id:
+                stops.append(stop_id)
+    return stops
 
 
 def fetch_tram_courses(stop_id: str) -> List[Dict]:
@@ -70,12 +93,26 @@ def find_current_stop(stops: List[Dict]) -> Optional[Dict]:
 
 
 def main() -> None:
-    stop_id = "20009224"  # Essen, Ernestinenstr.
+    city = "Essen"
     try:
-        courses = fetch_tram_courses(stop_id)
+        stop_ids = fetch_city_stops(city)
     except requests.RequestException as exc:
-        print("Failed to fetch lines:", exc)
+        print("Failed to fetch stops:", exc)
         return
+
+    seen: set[Tuple[str, str]] = set()
+    courses: List[Dict] = []
+    for stop_id in stop_ids:
+        try:
+            c = fetch_tram_courses(stop_id)
+        except requests.RequestException as exc:
+            print(f"Failed to fetch lines for stop {stop_id}:", exc)
+            continue
+        for course in c:
+            key = (course["line_number"], course["direction"])
+            if key not in seen:
+                seen.add(key)
+                courses.append(course)
 
     results = []
     for c in courses:
