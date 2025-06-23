@@ -1,6 +1,6 @@
-# Ruhrbahn Vehicle Map
+# VRR Tram Map
 
-A small Flask application that displays live positions of Ruhrbahn vehicles on a Leaflet map.
+A Flask web application that visualises live tram positions in the VRR region.
 
 ## Requirements
 
@@ -10,7 +10,7 @@ A small Flask application that displays live positions of Ruhrbahn vehicles on a
 Install dependencies with:
 
 ```bash
-pip install flask requests
+pip install flask requests protobuf
 ```
 
 ## Usage
@@ -23,7 +23,8 @@ python app.py
 
 Open `http://localhost:8021` in your browser.
 
-Use the dropdown to filter vehicles by line. The map refreshes automatically every 15 seconds.
+Use the dropdown or the URL parameter `?line=107` to filter vehicles by line.
+The map refreshes automatically every 15 seconds.
 
 ## VRR Stop Visit Script
 
