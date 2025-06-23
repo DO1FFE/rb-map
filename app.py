@@ -9,6 +9,7 @@ def index():
 
 @app.route('/api/vehicles')
 def get_vehicles():
+    """Return vehicle positions optionally filtered by line."""
     line_filter = request.args.get("line")
     url = "https://www.ruhrbahn.de/efaws2/default/XML_VEHICLE_MONITOR_REQUEST"
     response = requests.get(url, params={"outputFormat": "JSON"})
@@ -28,6 +29,17 @@ def get_vehicles():
                 "direction": v.get("direction", "?")
             })
     return jsonify(vehicles)
+
+
+@app.route('/api/lines')
+def get_lines():
+    """Return a list of available line numbers."""
+    url = "https://www.ruhrbahn.de/efaws2/default/XML_VEHICLE_MONITOR_REQUEST"
+    response = requests.get(url, params={"outputFormat": "JSON"})
+    response.raise_for_status()
+    data = response.json()
+    lines = sorted({v["number"] for v in data.get("vehicles", []) if v.get("number")})
+    return jsonify(lines)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8021, debug=True)
