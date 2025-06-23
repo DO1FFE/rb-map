@@ -1,52 +1,35 @@
 import requests
 
 
-def fetch_stop_visits(stop_id: str) -> dict | None:
-    """Return JSON data for upcoming visits at a stop from the EFA VRR API.
-
-    Returns ``None`` if the request fails for any reason.
-    """
+def fetch_visits_by_name(name: str) -> None:
+    """Fetch and display stop visits using a stop name."""
     url = "https://efa.vrr.de/standard/XML_STOPVISIT_REQUEST"
     params = {
         "language": "de",
         "outputFormat": "JSON",
         "coordOutputFormat": "WGS84[DD.ddddd]",
-        "siteid": "VRR",
-        "stop": stop_id,
+        "name": name,  # Kein stop=, sondern name=
     }
+
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(url, params=params)
         response.raise_for_status()
-        return response.json()
-    except requests.RequestException as exc:
-        print(f"Failed to fetch stop visits: {exc}")
-        return None
-
-
-def show_active_vehicles(data: dict | None) -> None:
-    """Print information about all active vehicles in the response."""
-    if data is None:
-        print("No data available")
-        return
-    visits = data.get("stopVisits", [])
-    for visit in visits:
-        journey = visit.get("monitoredVehicleJourney", {})
-        call = journey.get("monitoredCall", {})
-        location = journey.get("vehicleLocation", {})
-        print(
-            f"Linie {journey.get('lineRef')} | Kurs {journey.get('courseOfJourneyRef')}"
-        )
-        print(f"Richtung: {journey.get('directionName')}")
-        print(f"Haltestelle: {call.get('stopPointRef')}")
-        print(
-            f"Geoposition: {location.get('latitude')}, {location.get('longitude')}"
-        )
-        print(f"Geplante Ankunft: {call.get('aimedArrivalTime')}")
-        print("-" * 40)
+        data = response.json()
+        visits = data.get("stopVisits", [])
+        if not visits:
+            print("Keine Fahrzeugdaten vorhanden.")
+            return
+        for v in visits:
+            j = v["monitoredVehicleJourney"]
+            print(f"Linie {j['lineRef']} | Kurs {j.get('courseOfJourneyRef')}")
+            print(f"Richtung: {j.get('directionName')}")
+            print(f"Haltestelle: {j['monitoredCall']['stopPointRef']}")
+            print(f"Geoposition: {j.get('vehicleLocation', {})}")
+            print("-" * 40)
+    except requests.HTTPError as e:
+        print("Fehler beim Abruf:", e)
 
 
 if __name__ == "__main__":
-    # Example stop: Franziskanerstra\u00dfe Essen
-    stop_id = "de:05113:7056"
-    data = fetch_stop_visits(stop_id)
-    show_active_vehicles(data)
+    # Beispiel
+    fetch_visits_by_name("Franziskanerstr")
