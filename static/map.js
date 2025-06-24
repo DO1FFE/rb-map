@@ -6,6 +6,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let selectedLine = typeof INITIAL_LINE !== 'undefined' ? INITIAL_LINE : '';
 let selectedCourse = typeof INITIAL_COURSE !== 'undefined' ? INITIAL_COURSE : '';
 const markers = {};
+const courseListEl = document.getElementById('course-list');
 
 function getColor(line) {
   const colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown'];
@@ -89,6 +90,32 @@ function updateVehicles() {
     });
 }
 
+function updateMissingCourses() {
+  let url = '/missing_courses';
+  const params = [];
+  if (selectedLine) {
+    params.push(`line=${encodeURIComponent(selectedLine)}`);
+  }
+  if (params.length > 0) {
+    url += '?' + params.join('&');
+  }
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.length === 0) {
+        courseListEl.textContent = 'Keine Fahrten ohne Standort.';
+        return;
+      }
+      courseListEl.innerHTML = '';
+      data.forEach(c => {
+        const div = document.createElement('div');
+        const vehicle = c.vehicle ? ` (${c.vehicle})` : '';
+        div.textContent = `${c.line} | ${c.course}${vehicle} -> ${c.next_stop}`;
+        courseListEl.appendChild(div);
+      });
+    });
+}
+
 document.getElementById('line-filter').addEventListener('change', ev => {
   selectedLine = ev.target.value;
   selectedCourse = '';
@@ -108,8 +135,10 @@ document.getElementById('line-filter').addEventListener('change', ev => {
     const url = params.toString() ? `?${params.toString()}` : location.pathname;
     window.history.replaceState({}, '', url);
     updateVehicles();
+    updateMissingCourses();
   }
   updateVehicles();
+  updateMissingCourses();
 });
 
 document.getElementById('course-filter').addEventListener('change', ev => {
@@ -122,8 +151,10 @@ document.getElementById('course-filter').addEventListener('change', ev => {
   }
   window.history.replaceState({}, '', `?${params.toString()}`);
   updateVehicles();
+  updateMissingCourses();
 });
 
 loadLines();
 updateVehicles();
-setInterval(updateVehicles, 15000);
+updateMissingCourses();
+setInterval(() => { updateVehicles(); updateMissingCourses(); }, 15000);

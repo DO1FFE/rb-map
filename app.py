@@ -17,7 +17,7 @@ GTFS_FILE = os.environ.get("GTFS_FILE")
 
 
 # in-memory cache for the decoded feed
-_FEED_CACHE: Dict[str, Any] = {"timestamp": 0.0, "vehicles": []}
+_FEED_CACHE: Dict[str, Any] = {"timestamp": 0.0, "vehicles": [], "courses": []}
 
 
 def load_gtfs_feed() -> List[Dict[str, Any]]:
@@ -42,28 +42,50 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
     feed.ParseFromString(content)
 
     vehicles: List[Dict[str, Any]] = []
+    courses: List[Dict[str, Any]] = []
     for entity in feed.entity:
-        if not entity.HasField("vehicle"):
-            continue
-        vehicle = entity.vehicle
-        pos = vehicle.position
-        if not pos.HasField("latitude") or not pos.HasField("longitude"):
-            continue
-        trip = vehicle.trip
-        line = trip.route_id or trip.trip_id
-        vehicles.append(
-            {
-                "line": line,
-                "course": vehicle.vehicle.label or trip.trip_id,
-                "lat": pos.latitude,
-                "lon": pos.longitude,
-                "direction": getattr(pos, "bearing", 0.0),
-                "timestamp": vehicle.timestamp or feed.header.timestamp,
-            }
-        )
+        if entity.HasField("vehicle"):
+            vehicle = entity.vehicle
+            pos = vehicle.position
+            trip = vehicle.trip
+            line = trip.route_id or trip.trip_id
+            if pos.HasField("latitude") and pos.HasField("longitude"):
+                vehicles.append(
+                    {
+                        "line": line,
+                        "course": vehicle.vehicle.label or trip.trip_id,
+                        "lat": pos.latitude,
+                        "lon": pos.longitude,
+                        "direction": getattr(pos, "bearing", 0.0),
+                        "timestamp": vehicle.timestamp or feed.header.timestamp,
+                    }
+                )
+        if entity.HasField("trip_update"):
+            tu = entity.trip_update
+            trip = tu.trip
+            line = trip.route_id or trip.trip_id
+            vehicle_id = tu.vehicle.label or tu.vehicle.id or ""
+            next_stop = None
+            ref_time = feed.header.timestamp or int(time.time())
+            for s in tu.stop_time_update:
+                dep = s.departure.time or s.arrival.time
+                if dep >= ref_time:
+                    next_stop = s.stop_id
+                    break
+            if next_stop is None and tu.stop_time_update:
+                next_stop = tu.stop_time_update[-1].stop_id
+            courses.append(
+                {
+                    "line": line,
+                    "course": trip.trip_id,
+                    "vehicle": vehicle_id,
+                    "next_stop": next_stop,
+                }
+            )
 
     _FEED_CACHE["timestamp"] = now
     _FEED_CACHE["vehicles"] = vehicles
+    _FEED_CACHE["courses"] = courses
     return vehicles
 
 
@@ -106,6 +128,18 @@ def get_vehicles() -> Any:
     if course_filter:
         vehicles = [v for v in vehicles if str(v["course"]) == course_filter]
     return jsonify(vehicles)
+
+
+@app.route("/missing_courses")
+def get_missing_courses() -> Any:
+    line_filter = request.args.get("line")
+    vehicles = load_gtfs_feed()
+    courses = _FEED_CACHE.get("courses", [])
+    active = {v["course"] for v in vehicles}
+    result = [c for c in courses if c["course"] not in active]
+    if line_filter:
+        result = [c for c in result if c["line"] == line_filter]
+    return jsonify(result)
 
 
 if __name__ == "__main__":
