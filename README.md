@@ -26,6 +26,17 @@ Open `http://localhost:8021` in your browser.
 Use the dropdown or the URL parameter `?line=107` to filter vehicles by line.
 The map refreshes automatically every 15 seconds.
 
+### Generate line list
+
+The helper script `generate_line_list.py` creates a file `data/line.txt`
+containing all lines currently present in the GTFS feed:
+
+```bash
+python generate_line_list.py
+```
+
+The web application reads this file for the dropdown if it exists.
+
 ## VRR Stop Visit Script
 
 The repository also contains a small helper script `efa_stop_visits.py` that

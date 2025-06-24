@@ -56,18 +56,44 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
     return vehicles
 
 
+@app.route("/lines")
+def get_lines() -> Any:
+    """Return a list of available lines from the GTFS feed or file."""
+    try:
+        with open("data/line.txt", encoding="utf-8") as f:
+            lines = [l.strip() for l in f if l.strip()]
+    except FileNotFoundError:
+        vehicles = load_gtfs_feed()
+        lines = sorted({v["line"] for v in vehicles})
+    return jsonify(sorted(lines))
+
+
+@app.route("/courses")
+def get_courses() -> Any:
+    line = request.args.get("line")
+    if not line:
+        return jsonify([])
+    vehicles = load_gtfs_feed()
+    courses = sorted({str(v["course"]) for v in vehicles if v["line"] == line})
+    return jsonify(courses)
+
+
 @app.route("/")
 def index() -> str:
     line = request.args.get("line", "")
-    return render_template("index.html", line=line)
+    course = request.args.get("course", "")
+    return render_template("index.html", line=line, course=course)
 
 
 @app.route("/vehicles")
 def get_vehicles() -> Any:
     line_filter = request.args.get("line")
+    course_filter = request.args.get("course")
     vehicles = load_gtfs_feed()
     if line_filter:
         vehicles = [v for v in vehicles if v["line"] == line_filter]
+    if course_filter:
+        vehicles = [v for v in vehicles if str(v["course"]) == course_filter]
     return jsonify(vehicles)
 
 
