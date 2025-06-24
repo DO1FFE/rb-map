@@ -10,6 +10,17 @@ const courseListEl = document.getElementById('course-list');
 const essenSelect = document.getElementById('essen-line-filter');
 const courseDivs = {};
 
+function formatLine(line) {
+  const digits = String(line).replace(/\D/g, '');
+  return digits.slice(0, 3) || line;
+}
+
+function formatCourse(course) {
+  const digits = String(course).replace(/\D/g, '');
+  const last = digits.slice(-2);
+  return last.padStart(2, '0');
+}
+
 function getColor(line) {
   const colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown'];
   let idx = 0;
@@ -100,7 +111,7 @@ function updateVehicles() {
           rotationAngle: v.direction,
           rotationOrigin: 'center center'
         }).addTo(map);
-        marker.bindPopup(`<b>Linie:</b> ${v.line}<br><b>Kurs:</b> ${v.course}`);
+        marker.bindPopup(`<b>Linie:</b> ${formatLine(v.line)}<br><b>Kurs:</b> ${formatCourse(v.course)}`);
         markers[key] = marker;
       }
     });
@@ -119,9 +130,8 @@ function updateMissingCourses() {
     .then(r => r.json())
     .then(data => {
       if (data.length === 0) {
-        courseListEl.textContent = 'Keine Fahrten ohne Standort.';
+        courseListEl.innerHTML = 'Keine Fahrten ohne Standort.';
         for (const key in courseDivs) {
-          courseListEl.removeChild(courseDivs[key]);
           delete courseDivs[key];
         }
         return;
@@ -131,7 +141,7 @@ function updateMissingCourses() {
       data.forEach(c => {
         const key = `${c.line}-${c.course}`;
         const vehicle = c.vehicle ? ` (${c.vehicle})` : '';
-        const text = `${c.line} | ${c.course}${vehicle} -> ${c.next_stop}`;
+        const text = `${formatLine(c.line)} | ${formatCourse(c.course)}${vehicle} -> ${c.next_stop}`;
         seen.add(key);
         let div = courseDivs[key];
         if (div) {
