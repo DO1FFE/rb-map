@@ -23,8 +23,8 @@ python app.py
 
 Open `http://localhost:8021` in your browser.
 
-All vehicles from the feed are shown by default. Use the dropdown or the URL
-parameter `?line=107` to filter vehicles by line.
+Only the Essen tram lines (101, 103, 105, 106, 107, 108, 109) are displayed.
+Use the dropdown or the URL parameter `?line=107` to focus on a single line.
 The map refreshes automatically every 15 seconds.
 
 ### Generate line list
@@ -38,12 +38,18 @@ python generate_line_list.py
 
 The web application reads this file for the dropdown if it exists.
 
+If a file `data/stop_names.csv` with `stop_id,name` pairs is present, the
+application will show the stop name instead of the ID for missing course
+information. Otherwise the raw ID is used.
+
 ## VRR Stop Visit Script
 
 The repository also contains a small helper script `efa_stop_visits.py` that
-fetches live departures for a single stop via the public EFA VRR API. Run it
-with Python to print the currently monitored lines, courses and stops. If the
-API request fails, the script prints an error message:
+fetches live departures for a single stop via the public EFA VRR API. The
+script filters to the Essener tram lines (101, 103, 105, 106, 107, 108, 109)
+and prints the stop name instead of the stop ID if available. Run it with
+Python to display the currently monitored lines, courses and stops. If the API
+request fails, the script prints an error message:
 
 ```bash
 python efa_stop_visits.py
