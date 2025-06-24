@@ -130,13 +130,13 @@ def get_lines() -> Any:
         vehicles = load_gtfs_feed()
         lines = sorted({v["line"] for v in vehicles})
     lines = [l for l in lines if is_essen_line(l)]
-    return jsonify(sorted(lines, key=lambda x: int(x), reverse=True))
+    return jsonify(sorted(lines, key=lambda x: int(x)))
 
 
 @app.route("/essen_lines")
 def get_essen_lines() -> Any:
     """Return the configured Essen tram lines."""
-    return jsonify(sorted(ESSEN_LINES, key=lambda x: int(x), reverse=True))
+    return jsonify(sorted(ESSEN_LINES, key=lambda x: int(x)))
 
 
 @app.route("/courses")
@@ -180,6 +180,7 @@ def get_missing_courses() -> Any:
     for c in result:
         if c.get("next_stop"):
             c["next_stop"] = get_stop_name(str(c["next_stop"]))
+    result.sort(key=lambda c: (int(c["line"]), str(c["course"])))
     return jsonify(result)
 
 

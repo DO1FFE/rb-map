@@ -136,7 +136,11 @@ function updateMissingCourses() {
         }
         return;
       }
-      data.sort((a, b) => parseInt(b.line, 10) - parseInt(a.line, 10));
+      data.sort((a, b) => {
+        const lineDiff = parseInt(a.line, 10) - parseInt(b.line, 10);
+        if (lineDiff !== 0) return lineDiff;
+        return parseInt(a.course, 10) - parseInt(b.course, 10);
+      });
       const seen = new Set();
       data.forEach(c => {
         const key = `${c.line}-${c.course}`;
