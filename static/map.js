@@ -6,9 +6,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let selectedLine = typeof INITIAL_LINE !== 'undefined' ? INITIAL_LINE : '';
 let selectedCourse = typeof INITIAL_COURSE !== 'undefined' ? INITIAL_COURSE : '';
 const markers = {};
-const courseListEl = document.getElementById('course-list');
+const courseTableBody = document.getElementById('course-table-body');
 const essenSelect = document.getElementById('essen-line-filter');
-const courseDivs = {};
+const courseRows = {};
 
 function formatLine(line) {
   const digits = String(line).replace(/\D/g, '');
@@ -129,10 +129,16 @@ function updateMissingCourses() {
   fetch(url)
     .then(r => r.json())
     .then(data => {
+      courseTableBody.innerHTML = '';
       if (data.length === 0) {
-        courseListEl.innerHTML = 'Keine Fahrten ohne Standort.';
-        for (const key in courseDivs) {
-          delete courseDivs[key];
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 4;
+        cell.textContent = 'Keine Fahrten ohne Standort.';
+        row.appendChild(cell);
+        courseTableBody.appendChild(row);
+        for (const key in courseRows) {
+          delete courseRows[key];
         }
         return;
       }
@@ -141,37 +147,46 @@ function updateMissingCourses() {
         if (lineDiff !== 0) return lineDiff;
         return parseInt(a.course, 10) - parseInt(b.course, 10);
       });
-      courseListEl.innerHTML = '';
-      for (const key in courseDivs) {
-        delete courseDivs[key];
-      }
       const seen = new Set();
       data.forEach(c => {
         const key = `${c.line}-${c.course}`;
-        const vehicle = c.vehicle ? ` (${c.vehicle})` : '';
-        const headsign = c.headsign ? ` (${c.headsign})` : '';
-        const text = `${formatLine(c.line)} | ${formatCourse(c.course)}${vehicle} -> ${c.next_stop}${headsign}`;
+        const headsign = c.headsign || '';
+        const stop = c.next_stop || '';
         seen.add(key);
-        let div = courseDivs[key];
-        if (div) {
-          if (div.textContent !== text) {
-            div.textContent = text;
-            div.classList.add('updated');
-            setTimeout(() => div.classList.remove('updated'), 2000);
+        let row = courseRows[key];
+        if (row) {
+          const cells = row.children;
+          if (
+            cells[0].textContent !== formatLine(c.line) ||
+            cells[1].textContent !== formatCourse(c.course) ||
+            cells[2].textContent !== stop ||
+            cells[3].textContent !== headsign
+          ) {
+            cells[0].textContent = formatLine(c.line);
+            cells[1].textContent = formatCourse(c.course);
+            cells[2].textContent = stop;
+            cells[3].textContent = headsign;
+            row.classList.add('updated');
+            setTimeout(() => row.classList.remove('updated'), 2000);
           }
         } else {
-          div = document.createElement('div');
-          div.textContent = text;
-          div.classList.add('updated');
-          setTimeout(() => div.classList.remove('updated'), 2000);
-          courseDivs[key] = div;
+          row = document.createElement('tr');
+          row.classList.add('updated');
+          const vals = [formatLine(c.line), formatCourse(c.course), stop, headsign];
+          vals.forEach(v => {
+            const td = document.createElement('td');
+            td.textContent = v;
+            row.appendChild(td);
+          });
+          setTimeout(() => row.classList.remove('updated'), 2000);
+          courseRows[key] = row;
         }
-        courseListEl.appendChild(div);
+        courseTableBody.appendChild(row);
       });
-      Object.keys(courseDivs).forEach(k => {
+      Object.keys(courseRows).forEach(k => {
         if (!seen.has(k)) {
-          courseListEl.removeChild(courseDivs[k]);
-          delete courseDivs[k];
+          courseTableBody.removeChild(courseRows[k]);
+          delete courseRows[k];
         }
       });
     });
