@@ -72,13 +72,17 @@ function updateVehicles() {
       }
       for (const v of data) {
         const key = `${v.line}-${v.course}`;
-        const icon = L.divIcon({
+        const tramIcon = L.divIcon({
           className: '',
           html: `<div class="tram-marker" style="border-bottom-color:${getColor(v.line)}"></div>`,
           iconSize: [16, 16],
           iconAnchor: [8, 8]
         });
-        const marker = L.marker([v.lat, v.lon], { icon, rotationAngle: v.direction }).addTo(map);
+        const marker = L.marker([v.lat, v.lon], {
+          icon: tramIcon,
+          rotationAngle: v.direction,
+          rotationOrigin: 'center center'
+        }).addTo(map);
         marker.bindPopup(`<b>Linie:</b> ${v.line}<br><b>Kurs:</b> ${v.course}`);
         markers[key] = marker;
       }
