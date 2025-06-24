@@ -25,7 +25,7 @@ Open `http://localhost:8021` in your browser.
 
 Only the Essen tram lines (101, 103, 105, 106, 107, 108, 109) are displayed.
 Use the dropdown or the URL parameter `?line=107` to focus on a single line.
-The map refreshes automatically every 15 seconds.
+The map refreshes automatically every 10 seconds.
 
 ### Generate line list
 

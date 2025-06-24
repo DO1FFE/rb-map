@@ -157,4 +157,4 @@ document.getElementById('course-filter').addEventListener('change', ev => {
 loadLines();
 updateVehicles();
 updateMissingCourses();
-setInterval(() => { updateVehicles(); updateMissingCourses(); }, 15000);
+setInterval(() => { updateVehicles(); updateMissingCourses(); }, 10000);
