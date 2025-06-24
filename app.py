@@ -147,6 +147,8 @@ def get_lines() -> Any:
     except FileNotFoundError:
         vehicles = load_gtfs_feed()
         lines = sorted({v["line"] for v in vehicles})
+        if not lines:
+            lines = sorted(ESSEN_LINES)
     lines = [l for l in lines if is_essen_line(l)]
     return jsonify(sorted(lines, key=lambda x: int(x)))
 
