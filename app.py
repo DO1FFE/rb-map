@@ -5,6 +5,28 @@ import time
 from typing import Any, Dict, List
 
 from flask import Flask, jsonify, render_template, request
+
+# Essen tram lines shown by default
+ESSEN_LINES = {"101", "103", "105", "106", "107", "108", "109"}
+
+_STOP_NAME_MAP: Dict[str, str] = {}
+
+def _load_stop_names() -> None:
+    """Load stop_id->name mapping from data/stop_names.csv if present."""
+    path = os.path.join("data", "stop_names.csv")
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                sid, name = line.rstrip().split(",", 1)
+                _STOP_NAME_MAP[sid] = name
+    except FileNotFoundError:
+        pass
+
+_load_stop_names()
+
+def get_stop_name(stop_id: str) -> str:
+    """Return the stop name for the given ID if known."""
+    return _STOP_NAME_MAP.get(stop_id, stop_id)
 import requests
 from google.transit import gtfs_realtime_pb2
 
@@ -49,6 +71,8 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
             pos = vehicle.position
             trip = vehicle.trip
             line = trip.route_id or trip.trip_id
+            if line not in ESSEN_LINES:
+                continue
             if pos.HasField("latitude") and pos.HasField("longitude"):
                 vehicles.append(
                     {
@@ -64,6 +88,8 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
             tu = entity.trip_update
             trip = tu.trip
             line = trip.route_id or trip.trip_id
+            if line not in ESSEN_LINES:
+                continue
             vehicle_id = tu.vehicle.label or tu.vehicle.id or ""
             next_stop = None
             ref_time = feed.header.timestamp or int(time.time())
@@ -98,6 +124,7 @@ def get_lines() -> Any:
     except FileNotFoundError:
         vehicles = load_gtfs_feed()
         lines = sorted({v["line"] for v in vehicles})
+    lines = [l for l in lines if l in ESSEN_LINES]
     return jsonify(sorted(lines))
 
 
@@ -136,9 +163,12 @@ def get_missing_courses() -> Any:
     vehicles = load_gtfs_feed()
     courses = _FEED_CACHE.get("courses", [])
     active = {v["course"] for v in vehicles}
-    result = [c for c in courses if c["course"] not in active]
+    result = [c.copy() for c in courses if c["course"] not in active]
     if line_filter:
         result = [c for c in result if c["line"] == line_filter]
+    for c in result:
+        if c.get("next_stop"):
+            c["next_stop"] = get_stop_name(str(c["next_stop"]))
     return jsonify(result)
 
 
