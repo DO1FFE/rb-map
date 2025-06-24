@@ -7,6 +7,8 @@ let selectedLine = typeof INITIAL_LINE !== 'undefined' ? INITIAL_LINE : '';
 let selectedCourse = typeof INITIAL_COURSE !== 'undefined' ? INITIAL_COURSE : '';
 const markers = {};
 const courseListEl = document.getElementById('course-list');
+const essenSelect = document.getElementById('essen-line-filter');
+const courseDivs = {};
 
 function getColor(line) {
   const colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown'];
@@ -33,6 +35,20 @@ function loadLines() {
       if (selectedLine) {
         loadCourses(selectedLine);
       }
+    });
+}
+
+function loadEssenLines() {
+  fetch('/essen_lines')
+    .then(r => r.json())
+    .then(lines => {
+      essenSelect.innerHTML = '<option value="">Essener Linien</option>';
+      lines.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l;
+        opt.textContent = l;
+        essenSelect.appendChild(opt);
+      });
     });
 }
 
@@ -104,14 +120,40 @@ function updateMissingCourses() {
     .then(data => {
       if (data.length === 0) {
         courseListEl.textContent = 'Keine Fahrten ohne Standort.';
+        for (const key in courseDivs) {
+          courseListEl.removeChild(courseDivs[key]);
+          delete courseDivs[key];
+        }
         return;
       }
-      courseListEl.innerHTML = '';
+      data.sort((a, b) => parseInt(b.line, 10) - parseInt(a.line, 10));
+      const seen = new Set();
       data.forEach(c => {
-        const div = document.createElement('div');
+        const key = `${c.line}-${c.course}`;
         const vehicle = c.vehicle ? ` (${c.vehicle})` : '';
-        div.textContent = `${c.line} | ${c.course}${vehicle} -> ${c.next_stop}`;
+        const text = `${c.line} | ${c.course}${vehicle} -> ${c.next_stop}`;
+        seen.add(key);
+        let div = courseDivs[key];
+        if (div) {
+          if (div.textContent !== text) {
+            div.textContent = text;
+            div.classList.add('updated');
+            setTimeout(() => div.classList.remove('updated'), 2000);
+          }
+        } else {
+          div = document.createElement('div');
+          div.textContent = text;
+          div.classList.add('updated');
+          setTimeout(() => div.classList.remove('updated'), 2000);
+          courseDivs[key] = div;
+        }
         courseListEl.appendChild(div);
+      });
+      Object.keys(courseDivs).forEach(k => {
+        if (!seen.has(k)) {
+          courseListEl.removeChild(courseDivs[k]);
+          delete courseDivs[k];
+        }
       });
     });
 }
@@ -153,6 +195,15 @@ document.getElementById('course-filter').addEventListener('change', ev => {
   updateVehicles();
   updateMissingCourses();
 });
+
+essenSelect.addEventListener('change', ev => {
+  const value = ev.target.value;
+  document.getElementById('line-filter').value = value;
+  const event = new Event('change');
+  document.getElementById('line-filter').dispatchEvent(event);
+});
+
+loadEssenLines();
 
 loadLines();
 updateVehicles();

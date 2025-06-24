@@ -130,7 +130,13 @@ def get_lines() -> Any:
         vehicles = load_gtfs_feed()
         lines = sorted({v["line"] for v in vehicles})
     lines = [l for l in lines if is_essen_line(l)]
-    return jsonify(sorted(lines))
+    return jsonify(sorted(lines, key=lambda x: int(x), reverse=True))
+
+
+@app.route("/essen_lines")
+def get_essen_lines() -> Any:
+    """Return the configured Essen tram lines."""
+    return jsonify(sorted(ESSEN_LINES, key=lambda x: int(x), reverse=True))
 
 
 @app.route("/courses")
