@@ -7,7 +7,9 @@
   <script src="https://unpkg.com/leaflet-rotatedmarker/leaflet.rotatedMarker.js"></script>
   <style>
     #map { height: 70vh; }
-    #course-list { padding: 1em; font-family: sans-serif; }
+    #course-table { border-collapse: collapse; margin-top: 1em; font-family: sans-serif; }
+    #course-table th, #course-table td { border: 1px solid #ccc; padding: 0.25em 0.5em; }
+    #course-table th { background: #eee; }
     .tram-marker {
       width: 0;
       height: 0;
@@ -33,7 +35,12 @@
     <option value="">Alle Kurse</option>
   </select>
   <div id="map"></div>
-  <div id="course-list"></div>
+  <table id="course-table">
+    <thead>
+      <tr><th>Linie</th><th>Kurs</th><th>Haltestelle</th><th>Headsign</th></tr>
+    </thead>
+    <tbody id="course-table-body"></tbody>
+  </table>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     const INITIAL_LINE = "{{ line }}";
