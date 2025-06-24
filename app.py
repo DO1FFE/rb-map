@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 from typing import Any, Dict, List
 
@@ -9,7 +10,13 @@ from google.transit import gtfs_realtime_pb2
 
 app = Flask(__name__)
 
-GTFS_URL = "https://realtime.gtfs.de/realtime-free.pb"
+# URL of the public GTFS-Realtime feed
+GTFS_URL = os.environ.get("GTFS_URL", "https://realtime.gtfs.de/realtime-free.pb")
+# Optional local GTFS-Realtime file path for offline testing
+GTFS_FILE = os.environ.get("GTFS_FILE")
+
+# Only show the following lines on the map
+LINE_WHITELIST = {"101", "103", "105", "106", "107", "108", "109"}
 
 # in-memory cache for the decoded feed
 _FEED_CACHE: Dict[str, Any] = {"timestamp": 0.0, "vehicles": []}
@@ -22,14 +29,19 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
         return _FEED_CACHE["vehicles"]
 
     try:
-        resp = requests.get(GTFS_URL, timeout=10)
-        resp.raise_for_status()
-    except requests.RequestException as exc:
+        if GTFS_FILE:
+            with open(GTFS_FILE, "rb") as f:
+                content = f.read()
+        else:
+            resp = requests.get(GTFS_URL, timeout=10)
+            resp.raise_for_status()
+            content = resp.content
+    except (requests.RequestException, OSError) as exc:
         app.logger.exception("Failed to fetch GTFS feed: %s", exc)
         return _FEED_CACHE["vehicles"]
 
     feed = gtfs_realtime_pb2.FeedMessage()
-    feed.ParseFromString(resp.content)
+    feed.ParseFromString(content)
 
     vehicles: List[Dict[str, Any]] = []
     for entity in feed.entity:
@@ -40,9 +52,12 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
         if not pos.HasField("latitude") or not pos.HasField("longitude"):
             continue
         trip = vehicle.trip
+        line = trip.route_id or trip.trip_id
+        if line not in LINE_WHITELIST:
+            continue
         vehicles.append(
             {
-                "line": trip.route_id or trip.trip_id,
+                "line": line,
                 "course": vehicle.vehicle.label or trip.trip_id,
                 "lat": pos.latitude,
                 "lon": pos.longitude,
@@ -65,6 +80,7 @@ def get_lines() -> Any:
     except FileNotFoundError:
         vehicles = load_gtfs_feed()
         lines = sorted({v["line"] for v in vehicles})
+    lines = [l for l in lines if l in LINE_WHITELIST]
     return jsonify(sorted(lines))
 
 
@@ -91,6 +107,8 @@ def get_vehicles() -> Any:
     course_filter = request.args.get("course")
     vehicles = load_gtfs_feed()
     if line_filter:
+        if line_filter not in LINE_WHITELIST:
+            return jsonify([])
         vehicles = [v for v in vehicles if v["line"] == line_filter]
     if course_filter:
         vehicles = [v for v in vehicles if str(v["course"]) == course_filter]
