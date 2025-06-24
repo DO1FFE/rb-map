@@ -8,7 +8,6 @@ let selectedCourse = typeof INITIAL_COURSE !== 'undefined' ? INITIAL_COURSE : ''
 const markers = {};
 const courseTableBody = document.getElementById('course-table-body');
 const essenSelect = document.getElementById('essen-line-filter');
-const courseRows = {};
 
 function formatLine(line) {
   const digits = String(line).replace(/\D/g, '');
@@ -137,9 +136,6 @@ function updateMissingCourses() {
         cell.textContent = 'Keine Fahrten ohne Standort.';
         row.appendChild(cell);
         courseTableBody.appendChild(row);
-        for (const key in courseRows) {
-          delete courseRows[key];
-        }
         return;
       }
       data.sort((a, b) => {
@@ -147,47 +143,22 @@ function updateMissingCourses() {
         if (lineDiff !== 0) return lineDiff;
         return parseInt(a.course, 10) - parseInt(b.course, 10);
       });
-      const seen = new Set();
       data.forEach(c => {
-        const key = `${c.line}-${c.course}`;
-        const headsign = c.headsign || '';
-        const stop = c.next_stop || '';
-        seen.add(key);
-        let row = courseRows[key];
-        if (row) {
-          const cells = row.children;
-          if (
-            cells[0].textContent !== formatLine(c.line) ||
-            cells[1].textContent !== formatCourse(c.course) ||
-            cells[2].textContent !== stop ||
-            cells[3].textContent !== headsign
-          ) {
-            cells[0].textContent = formatLine(c.line);
-            cells[1].textContent = formatCourse(c.course);
-            cells[2].textContent = stop;
-            cells[3].textContent = headsign;
-            row.classList.add('updated');
-            setTimeout(() => row.classList.remove('updated'), 2000);
-          }
-        } else {
-          row = document.createElement('tr');
-          row.classList.add('updated');
-          const vals = [formatLine(c.line), formatCourse(c.course), stop, headsign];
-          vals.forEach(v => {
-            const td = document.createElement('td');
-            td.textContent = v;
-            row.appendChild(td);
-          });
-          setTimeout(() => row.classList.remove('updated'), 2000);
-          courseRows[key] = row;
-        }
+        const row = document.createElement('tr');
+        row.classList.add('updated');
+        const vals = [
+          formatLine(c.line),
+          formatCourse(c.course),
+          c.next_stop || '',
+          c.headsign || ''
+        ];
+        vals.forEach(v => {
+          const td = document.createElement('td');
+          td.textContent = v;
+          row.appendChild(td);
+        });
+        setTimeout(() => row.classList.remove('updated'), 2000);
         courseTableBody.appendChild(row);
-      });
-      Object.keys(courseRows).forEach(k => {
-        if (!seen.has(k)) {
-          courseTableBody.removeChild(courseRows[k]);
-          delete courseRows[k];
-        }
       });
     });
 }
