@@ -141,11 +141,16 @@ function updateMissingCourses() {
         if (lineDiff !== 0) return lineDiff;
         return parseInt(a.course, 10) - parseInt(b.course, 10);
       });
+      courseListEl.innerHTML = '';
+      for (const key in courseDivs) {
+        delete courseDivs[key];
+      }
       const seen = new Set();
       data.forEach(c => {
         const key = `${c.line}-${c.course}`;
         const vehicle = c.vehicle ? ` (${c.vehicle})` : '';
-        const text = `${formatLine(c.line)} | ${formatCourse(c.course)}${vehicle} -> ${c.next_stop}`;
+        const headsign = c.headsign ? ` (${c.headsign})` : '';
+        const text = `${formatLine(c.line)} | ${formatCourse(c.course)}${vehicle} -> ${c.next_stop}${headsign}`;
         seen.add(key);
         let div = courseDivs[key];
         if (div) {

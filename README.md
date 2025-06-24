@@ -41,6 +41,8 @@ The web application reads this file for the dropdown if it exists.
 If a file `data/stop_names.csv` with `stop_id,name` pairs is present, the
 application will show the stop name instead of the ID for missing course
 information. Otherwise the raw ID is used.
+If a file `data/headsigns.csv` with `trip_id,headsign` pairs exists, the
+application will show the trip headsign in the list of missing courses.
 
 ## VRR Stop Visit Script
 
