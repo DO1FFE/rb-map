@@ -10,7 +10,7 @@ A Flask web application that visualises live tram positions in the VRR region.
 Install dependencies with:
 
 ```bash
-pip install flask requests protobuf
+pip install flask requests protobuf gtfs-realtime-bindings
 ```
 
 ## Usage
