@@ -23,7 +23,8 @@ python app.py
 
 Open `http://localhost:8021` in your browser.
 
-Use the dropdown or the URL parameter `?line=107` to filter vehicles by line.
+All vehicles from the feed are shown by default. Use the dropdown or the URL
+parameter `?line=107` to filter vehicles by line.
 The map refreshes automatically every 15 seconds.
 
 ### Generate line list

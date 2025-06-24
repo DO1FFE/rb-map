@@ -15,8 +15,6 @@ GTFS_URL = os.environ.get("GTFS_URL", "https://realtime.gtfs.de/realtime-free.pb
 # Optional local GTFS-Realtime file path for offline testing
 GTFS_FILE = os.environ.get("GTFS_FILE")
 
-# Only show the following lines on the map
-LINE_WHITELIST = {"101", "103", "105", "106", "107", "108", "109"}
 
 # in-memory cache for the decoded feed
 _FEED_CACHE: Dict[str, Any] = {"timestamp": 0.0, "vehicles": []}
@@ -53,8 +51,6 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
             continue
         trip = vehicle.trip
         line = trip.route_id or trip.trip_id
-        if line not in LINE_WHITELIST:
-            continue
         vehicles.append(
             {
                 "line": line,
@@ -80,7 +76,6 @@ def get_lines() -> Any:
     except FileNotFoundError:
         vehicles = load_gtfs_feed()
         lines = sorted({v["line"] for v in vehicles})
-    lines = [l for l in lines if l in LINE_WHITELIST]
     return jsonify(sorted(lines))
 
 
@@ -107,8 +102,6 @@ def get_vehicles() -> Any:
     course_filter = request.args.get("course")
     vehicles = load_gtfs_feed()
     if line_filter:
-        if line_filter not in LINE_WHITELIST:
-            return jsonify([])
         vehicles = [v for v in vehicles if v["line"] == line_filter]
     if course_filter:
         vehicles = [v for v in vehicles if str(v["course"]) == course_filter]
