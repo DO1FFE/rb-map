@@ -15,6 +15,7 @@ def is_essen_line(line: str) -> bool:
     return any(line.startswith(l) for l in ESSEN_LINES)
 
 _STOP_NAME_MAP: Dict[str, str] = {}
+_HEADSIGN_MAP: Dict[str, str] = {}
 
 def _load_stop_names() -> None:
     """Load stop_id->name mapping from data/stop_names.csv if present."""
@@ -27,11 +28,27 @@ def _load_stop_names() -> None:
     except FileNotFoundError:
         pass
 
+def _load_headsigns() -> None:
+    """Load trip_id->headsign mapping from data/headsigns.csv if present."""
+    path = os.path.join("data", "headsigns.csv")
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                tid, headsign = line.rstrip().split(",", 1)
+                _HEADSIGN_MAP[tid] = headsign
+    except FileNotFoundError:
+        pass
+
 _load_stop_names()
+_load_headsigns()
 
 def get_stop_name(stop_id: str) -> str:
     """Return the stop name for the given ID if known."""
     return _STOP_NAME_MAP.get(stop_id, stop_id)
+
+def get_headsign(trip_id: str) -> str:
+    """Return the headsign for the given trip ID if known."""
+    return _HEADSIGN_MAP.get(trip_id, "")
 import requests
 from google.transit import gtfs_realtime_pb2
 
@@ -111,6 +128,7 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
                     "course": trip.trip_id,
                     "vehicle": vehicle_id,
                     "next_stop": next_stop,
+                    "headsign": get_headsign(trip.trip_id),
                 }
             )
 
