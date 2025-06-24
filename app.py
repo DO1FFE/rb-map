@@ -9,6 +9,11 @@ from flask import Flask, jsonify, render_template, request
 # Essen tram lines shown by default
 ESSEN_LINES = {"101", "103", "105", "106", "107", "108", "109"}
 
+
+def is_essen_line(line: str) -> bool:
+    """Return True if the line starts with one of the Essen prefixes."""
+    return any(line.startswith(l) for l in ESSEN_LINES)
+
 _STOP_NAME_MAP: Dict[str, str] = {}
 
 def _load_stop_names() -> None:
@@ -71,7 +76,7 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
             pos = vehicle.position
             trip = vehicle.trip
             line = trip.route_id or trip.trip_id
-            if line not in ESSEN_LINES:
+            if not is_essen_line(line):
                 continue
             if pos.HasField("latitude") and pos.HasField("longitude"):
                 vehicles.append(
@@ -88,7 +93,7 @@ def load_gtfs_feed() -> List[Dict[str, Any]]:
             tu = entity.trip_update
             trip = tu.trip
             line = trip.route_id or trip.trip_id
-            if line not in ESSEN_LINES:
+            if not is_essen_line(line):
                 continue
             vehicle_id = tu.vehicle.label or tu.vehicle.id or ""
             next_stop = None
@@ -124,7 +129,7 @@ def get_lines() -> Any:
     except FileNotFoundError:
         vehicles = load_gtfs_feed()
         lines = sorted({v["line"] for v in vehicles})
-    lines = [l for l in lines if l in ESSEN_LINES]
+    lines = [l for l in lines if is_essen_line(l)]
     return jsonify(sorted(lines))
 
 
